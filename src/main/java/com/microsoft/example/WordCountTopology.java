@@ -26,7 +26,7 @@ public class WordCountTopology {
     //and parallelism hint of 12 executors
     //fieldsgrouping subscribes to the split bolt, and
     //ensures that the same word is sent to the same instance (group by field 'word')
-    builder.setBolt("count", new WordCount(), 12).fieldsGrouping("split", new Fields("word"));
+    builder.setBolt("count", new WordCount(), 12).fieldsGrouping("split", new Fields("id"));
 
     //new configuration
     Config conf = new Config();

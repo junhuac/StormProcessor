@@ -54,13 +54,16 @@ public class RandomSentenceSpout extends BaseRichSpout {
   public void nextTuple() {
   //Sleep for a bit
     Utils.sleep(100);
-    //The sentences that will be randomly emitted
-    String[] sentences = new String[]{ "the cow jumped over the moon", "an apple a day keeps the doctor away",
-        "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
-    //Randomly pick a sentence
-    String sentence = sentences[_rand.nextInt(sentences.length)];
-    //Emit the sentence
-    _collector.emit(new Values(sentence));
+    //The device data that will be randomly emitted
+    Integer[] ids = new Integer[]{0, 1, 2, 3, 4, 5, 6};
+    Integer id = ids[_rand.nextInt(ids.length)];
+    Float[] latitudes = new Float[]{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+    Float latitude = latitudes[_rand.nextInt(latitudes.length)];
+    Float[] longitudes = new Float[]{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+    Float longitude = longitudes[_rand.nextInt(longitudes.length)];
+
+    //Emit the device data 
+    _collector.emit(new Values(id, latitude, longitude));
   }
 
   //Ack is not implemented since this is a basic example
@@ -76,6 +79,6 @@ public class RandomSentenceSpout extends BaseRichSpout {
   //Declare the output fields. In this case, an sentence
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("sentence"));
+    declarer.declare(new Fields("id", "latitude", "longitude"));
   }
 }

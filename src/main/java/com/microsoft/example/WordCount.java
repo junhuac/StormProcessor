@@ -13,27 +13,27 @@ import org.apache.storm.tuple.Values;
 //There are a variety of bolt types. In this case, we use BaseBasicBolt
 public class WordCount extends BaseBasicBolt {
   //For holding words and counts
-  Map<String, Integer> counts = new HashMap<String, Integer>();
+  Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
 
   //execute is called to process tuples
   @Override
   public void execute(Tuple tuple, BasicOutputCollector collector) {
-    //Get the word contents from the tuple
-    String word = tuple.getString(0);
+    //Get the device id from the tuple
+    Integer id = tuple.getInteger(0);
     //Have we counted any already?
-    Integer count = counts.get(word);
+    Integer count = counts.get(id);
     if (count == null)
       count = 0;
     //Increment the count and store it
     count++;
-    counts.put(word, count);
-    //Emit the word and the current count
-    collector.emit(new Values(word, count));
+    counts.put(id, count);
+    //Emit the id and the current count
+    collector.emit(new Values(id, count));
   }
 
   //Declare that we will emit a tuple containing two fields; word and count
   @Override
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-    declarer.declare(new Fields("word", "count"));
+    declarer.declare(new Fields("id", "count"));
   }
 }
