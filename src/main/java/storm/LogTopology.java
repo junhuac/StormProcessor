@@ -63,6 +63,8 @@ public class LogTopology {
                 namespaceName, entityPath, partitionCount, zkEndpointAddress,
                 checkpointIntervalInSeconds, receiverCredits);
 
+        //spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+
         numWorkers = spoutConfig.getPartitionCount();
 
         if (args.length > 0) {
@@ -87,6 +89,10 @@ public class LogTopology {
 
     protected void runScenario(String[] args) throws Exception {
         boolean runLocal = true;
+        //If there are arguments, we are running on a cluster
+        if (args != null && args.length > 0) {
+            runLocal = false;
+        }
         readEHConfig(args);
         StormTopology topology = buildTopology();
         Config config = new Config();
