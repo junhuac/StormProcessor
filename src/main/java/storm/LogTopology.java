@@ -8,6 +8,10 @@ import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
 
+import org.apache.storm.kafka.bolt.KafkaBolt;
+import org.apache.storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper;
+import org.apache.storm.kafka.bolt.selector.DefaultTopicSelector;
+
 import org.apache.storm.eventhubs.samples.EventCount;
 import org.apache.storm.eventhubs.spout.EventHubSpout;
 import org.apache.storm.eventhubs.spout.EventHubSpoutConfig;
@@ -79,11 +83,32 @@ public class LogTopology {
         topologyBuilder.setSpout("EventHubsSpout", eventHubSpout,
                 spoutConfig.getPartitionCount()).setNumTasks(
                 spoutConfig.getPartitionCount());
+
         topologyBuilder
                 .setBolt("LoggerBolt", new LoggerBolt(),
                         spoutConfig.getPartitionCount())
                 .localOrShuffleGrouping("EventHubsSpout")
                 .setNumTasks(spoutConfig.getPartitionCount());
+
+        //Config conf = new Config();
+        //set producer properties.
+        Properties props = new Properties();
+        props.put("acks", "1");
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("metadata.fetch.timeout.ms", 1000);
+        //props.put("metadata.broker.list", "localhost:9092");
+        //props.put("request.required.acks", "1");
+        //props.put("serializer.class", "kafka.serializer.StringEncoder");
+        //conf.put("kafka.broker.properties", props);
+
+        KafkaBolt bolt = new KafkaBolt()
+                     .withProducerProperties(props)
+                     .withTopicSelector(new DefaultTopicSelector("device"))
+                     .withTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper());
+        topologyBuilder.setBolt("forwardToKafka", bolt, 8).shuffleGrouping("EventHubsSpout");
+
         return topologyBuilder.createTopology();
     }
 
@@ -91,7 +116,7 @@ public class LogTopology {
         boolean runLocal = true;
         //If there are arguments, we are running on a cluster
         if (args != null && args.length > 0) {
-            runLocal = false;
+            //runLocal = false;
         }
         readEHConfig(args);
         StormTopology topology = buildTopology();
