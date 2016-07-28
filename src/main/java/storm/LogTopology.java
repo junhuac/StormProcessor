@@ -1,5 +1,6 @@
 package storm;
 
+import java.util.UUID;
 import java.io.FileReader;
 import java.util.Properties;
 import org.apache.storm.Config;
@@ -7,6 +8,13 @@ import org.apache.storm.LocalCluster;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.topology.TopologyBuilder;
+
+import org.apache.storm.kafka.KafkaSpout;
+import org.apache.storm.Config;
+import org.apache.storm.kafka.SpoutConfig;
+import org.apache.storm.kafka.BrokerHosts;
+import org.apache.storm.kafka.ZkHosts;
+import org.apache.storm.kafka.StringScheme;
 
 import org.apache.storm.kafka.bolt.KafkaBolt;
 import org.apache.storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper;
@@ -16,8 +24,11 @@ import org.apache.storm.eventhubs.samples.EventCount;
 import org.apache.storm.eventhubs.spout.EventHubSpout;
 import org.apache.storm.eventhubs.spout.EventHubSpoutConfig;
 
+import org.apache.storm.spout.SchemeAsMultiScheme;
+
 public class LogTopology {
     protected EventHubSpoutConfig spoutConfig;
+    protected SpoutConfig kafkaspoutConfig;
     protected int numWorkers;
 
     protected void readEHConfig(String[] args) throws Exception {
@@ -69,6 +80,12 @@ public class LogTopology {
 
         //spoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
 
+        BrokerHosts hosts = new ZkHosts(zkEndpointAddress);
+
+        String topicName = "device";
+        kafkaspoutConfig = new SpoutConfig(hosts, topicName, "/" + topicName, UUID.randomUUID().toString());
+        kafkaspoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+
         numWorkers = spoutConfig.getPartitionCount();
 
         if (args.length > 0) {
@@ -84,10 +101,16 @@ public class LogTopology {
                 spoutConfig.getPartitionCount()).setNumTasks(
                 spoutConfig.getPartitionCount());
 
+        KafkaSpout kafkaSpout = new KafkaSpout(kafkaspoutConfig);
+
+        topologyBuilder.setSpout("KafkaSpout", kafkaSpout,
+                spoutConfig.getPartitionCount()).setNumTasks(
+                spoutConfig.getPartitionCount());
+
         topologyBuilder
                 .setBolt("LoggerBolt", new LoggerBolt(),
                         spoutConfig.getPartitionCount())
-                .localOrShuffleGrouping("EventHubsSpout")
+                .localOrShuffleGrouping("KafkaSpout")
                 .setNumTasks(spoutConfig.getPartitionCount());
 
         //Config conf = new Config();
