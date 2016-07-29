@@ -25,6 +25,13 @@ import org.apache.storm.eventhubs.spout.EventHubSpout;
 import org.apache.storm.eventhubs.spout.EventHubSpoutConfig;
 
 import org.apache.storm.spout.SchemeAsMultiScheme;
+import org.apache.storm.tuple.Fields;
+
+//hbase
+import org.apache.storm.hbase.bolt.mapper.SimpleHBaseMapper;
+import org.apache.storm.hbase.bolt.HBaseBolt;
+import java.util.Map;
+import java.util.HashMap;
 
 public class LogTopology {
     protected EventHubSpoutConfig spoutConfig;
@@ -107,11 +114,24 @@ public class LogTopology {
                 spoutConfig.getPartitionCount()).setNumTasks(
                 spoutConfig.getPartitionCount());
 
+        topologyBuilder.setBolt("Parser", new ParserBolt(), spoutConfig.getPartitionCount())
+                .localOrShuffleGrouping("KafkaSpout").setNumTasks(spoutConfig.getPartitionCount());
+
         topologyBuilder
                 .setBolt("LoggerBolt", new LoggerBolt(),
                         spoutConfig.getPartitionCount())
                 .localOrShuffleGrouping("KafkaSpout")
                 .setNumTasks(spoutConfig.getPartitionCount());
+
+        SimpleHBaseMapper mapper = new SimpleHBaseMapper()
+          .withRowKeyField("deviceid")
+          .withColumnFields(new Fields("timestamp", "latitude", "longitude"))
+          .withColumnFamily("cf");
+
+        // Create the HBase bolt, which subscribes to the stream from Parser
+        topologyBuilder
+                .setBolt("HBase", new HBaseBolt("DeviceData", mapper).withConfigKey("hbase.conf"), spoutConfig.getPartitionCount())
+                .fieldsGrouping("Parser", "hbasestream", new Fields("deviceid")).setNumTasks(spoutConfig.getPartitionCount());
 
         //Config conf = new Config();
         //set producer properties.
@@ -142,9 +162,16 @@ public class LogTopology {
             //runLocal = false;
         }
         readEHConfig(args);
-        StormTopology topology = buildTopology();
         Config config = new Config();
         config.setDebug(false);
+
+        Map<String, Object> hbConf = new HashMap<String, Object>();
+        //if(args.length > 0) {
+          hbConf.put("hbase.rootdir", "file:///tmp/hbase" /*args[0]*/);
+        //}
+        config.put("hbase.conf", hbConf);
+        
+        StormTopology topology = buildTopology();
 
         if (runLocal) {
             config.setMaxTaskParallelism(2);
