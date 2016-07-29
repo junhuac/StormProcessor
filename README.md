@@ -1,11 +1,11 @@
 ---
 services: hdinsight
 platforms: java
-author: blackmist
+author: Junhua Chang
 ---
 
-# hdinsight-java-storm-wordcount
-A basic example of a Java-based Apache Storm Topology that can be used with Storm on HDInsight.
+# StormProcessor
+Java-based Apache Storm Topology to be used with Azure Eventhubs and Kafka.
 
 See [Develop a Java topology for Storm on HDInsight](https://azure.microsoft.com/en-us/documentation/articles/hdinsight-storm-develop-java-topology) for a walkthrough of the steps used to create this project.
 
@@ -19,7 +19,7 @@ See [Develop a Java topology for Storm on HDInsight](https://azure.microsoft.com
 
 4. Assuming Java and Maven are in the path, and everything is configured fine for JAVA_HOME, use the following to build and run the topology on the development environment:
 
-        mvn compile exec:java -Dstorm.topology=com.microsoft.example.WordCountTopology
+        mvn compile exec:java -Dstorm.topology=storm.LogTopology
 
 	As it runs, the topology will display startup information. Then it begins to display lines similar to the following as sentences are emitted from the spout and processed by the bolts.
 
@@ -45,7 +45,7 @@ Use the following command to create a .jar package for the topology.
 
 	mvn package
 
-This will create a file named `WordCount-1.0-SNAPSHOT.jar` in the `target` directory.
+This will create a file named `StormProcessor-1.0-SNAPSHOT.jar` in the `target` directory.
 	
 Use one of the following links to learn how to deploy the jar file to a Storm on HDInsight cluster:
 
